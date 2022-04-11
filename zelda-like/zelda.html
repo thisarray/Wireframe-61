@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>zelda</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/boulder.png" alt="boulder" data-name="boulder">
+  <img class="hidden" src="images/ground.png" alt="ground" data-name="ground">
+  <img class="hidden" src="images/link_1.png" alt="link_1" data-name="link_1">
+  <img class="hidden" src="images/link_2.png" alt="link_2" data-name="link_2">
+  <img class="hidden" src="images/link_3.png" alt="link_3" data-name="link_3">
+  <img class="hidden" src="images/link_4.png" alt="link_4" data-name="link_4">
+  <img class="hidden" src="images/link_5.png" alt="link_5" data-name="link_5">
+  <img class="hidden" src="images/link_6.png" alt="link_6" data-name="link_6">
+  <img class="hidden" src="images/link_7.png" alt="link_7" data-name="link_7">
+  <img class="hidden" src="images/link_8.png" alt="link_8" data-name="link_8">
+  <img class="hidden" src="images/logo.png" alt="logo" data-name="logo">
+  <img class="hidden" src="images/map.png" alt="map" data-name="map">
+  <img class="hidden" src="images/monster_1.png" alt="monster_1" data-name="monster_1">
+  <img class="hidden" src="images/monster_2.png" alt="monster_2" data-name="monster_2">
+  <img class="hidden" src="images/monster_3.png" alt="monster_3" data-name="monster_3">
+  <img class="hidden" src="images/monster_4.png" alt="monster_4" data-name="monster_4">
+  <img class="hidden" src="images/monster_5.png" alt="monster_5" data-name="monster_5">
+  <img class="hidden" src="images/monster_6.png" alt="monster_6" data-name="monster_6">
+  <img class="hidden" src="images/monster_7.png" alt="monster_7" data-name="monster_7">
+  <img class="hidden" src="images/monster_8.png" alt="monster_8" data-name="monster_8">
+  <img class="hidden" src="images/rock.png" alt="rock" data-name="rock">
+  <img class="hidden" src="images/sword_0.png" alt="sword_0" data-name="sword_0">
+  <img class="hidden" src="images/sword_1.png" alt="sword_1" data-name="sword_1">
+  <img class="hidden" src="images/sword_2.png" alt="sword_2" data-name="sword_2">
+  <img class="hidden" src="images/sword_3.png" alt="sword_3" data-name="sword_3">
+  <img class="hidden" src="images/tree.png" alt="tree" data-name="tree">
+</section>
+
+<main>
+<h1>zelda</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://wireframe.raspberrypi.com/issues/61">Code your own top-down Zelda-like, pages 55-57, by Mark Vanstone</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<p><a href="https://www.raspberrypi.com/news/code-your-own-top-down-zelda-like-wireframe-61/">Blog post of Source Code</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+# Zelda
+import pgzrun
+import math
+from pygame import image, Color
+
+link = Actor(&quot;link_1&quot;,center=(400,400))
+link.frame = link.movex = link.movey = link.dir = link.testx = link.testy = 0
+sword = Actor(&quot;sword_1&quot;,center=(400,400))
+sword.frame = sword.dir = 0
+myDirs = [(0,1),(-1,0),(0,-1),(1,0)]
+monstersXY = [(1325,375),(1025,-225),(300,-225),(1925,-225),(1925,375)]
+monsters = []
+for m in monstersXY:
+    monsters.append(Actor(&#x27;monster_1&#x27;, center=(m[0], m[1])))
+    l = len(monsters)-1
+    monsters[l].state = 10
+    monsters[l].frame = monsters[l].movex = monsters[l].movey = monsters[l].dir = monsters[l].testx = monsters[l].testy = 0
+
+mymap = image.load(&#x27;images/map.png&#x27;)
+mapx = 0
+mapy = 10
+mapScrollx = 0
+mapScrolly = 0
+
+def draw():
+    screen.clear()
+    screen.blit(&quot;logo&quot;,(612,10))
+    screen.draw.text(&quot;W, A, S, D TO MOVE&quot;, center= (440, 30), color=(0,255,0) , fontsize=30)
+    screen.draw.text(&quot;SPACE TO USE SWORD&quot;, center= (440, 70), color=(0,255,0) , fontsize=30)
+    drawMap()
+    drawChars()
+
+def drawMap():
+    xtest = math.floor(link.x/50 + (link.movex))
+    ytest = math.floor((link.y-100)/50 + (link.movey))
+    for x in range(16):
+        for y in range(10):
+            col = mymap.get_at((x+mapx,y+mapy))
+            if col == (0,255,0): screen.blit(&quot;tree&quot;,(x*50,(y*50)+100))
+            if col == (0,0,0): screen.blit(&quot;ground&quot;,(x*50,(y*50)+100))
+            if col == (255,0,0): screen.blit(&quot;boulder&quot;,(x*50,(y*50)+100))
+            if col == (255,255,0): screen.blit(&quot;rock&quot;,(x*50,(y*50)+100))
+    maprect = Rect((10, 10), (266, 80))
+    screen.draw.filled_rect(maprect, (100, 100, 100))
+    mx = (mapx*50)+link.x
+    my = (mapy*50)+link.y
+    linkrect = Rect(((mx/12)+10, (my/12)), (4, 4))
+    screen.draw.filled_rect(linkrect, (0, 255, 0))
+
+def drawChars():
+    link.image = &quot;link_&quot;+str(((link.dir*2)+1)+math.floor(link.frame/10))
+    if sword.frame &gt; 0 and sword.dir == 2:
+        sword.draw()
+    link.draw()
+    if sword.frame &gt; 0 and sword.dir != 2:
+        sword.draw()
+    for m in monsters:
+        if onScreen(m.x,m.y) and m.state &gt; 0:
+            if m.state &lt; 10:
+                m.angle += 10
+                m.state -= 1
+            if m.state == 10: m.image = &quot;monster_&quot;+str(((m.dir*2)+1)+math.floor(m.frame/10))
+            m.draw()
+
+def update():
+    global mapScrollx, mapScrolly,mapx,mapy
+    checkInput()
+    moveChars()
+    if(mapScrollx &gt; 0): mapScroll(1,0)
+    if(mapScrollx &lt; 0): mapScroll(-1,0)
+    if(mapScrolly &gt; 0): mapScroll(0,1)
+    if(mapScrolly &lt; 0): mapScroll(0,-1)
+    if sword.frame &gt; 0:
+        if(sword.frame &gt; 5):
+            sword.x += myDirs[sword.dir][0]*2
+            sword.y += myDirs[sword.dir][1]*2
+        else:
+            sword.x -= myDirs[sword.dir][0]*2
+            sword.y -= myDirs[sword.dir][1]*2
+        sword.frame -= 1
+        for m in monsters:
+            if m.collidepoint((sword.x, sword.y)):
+                m.state = 9
+
+def mapScroll(x,y):
+    global mapScrollx, mapScrolly,mapx,mapy
+    mapx += x
+    mapScrollx -= x
+    link.x -= x*50
+    mapy += y
+    mapScrolly -= y
+    link.y -= y*50
+    for m in monsters:
+        m.x -= x*50
+        m.y -= y*50
+
+def checkInput():
+    if keyboard.a: link.movex = -1
+    if keyboard.d: link.movex = 1
+    if keyboard.w: link.movey = -1
+    if keyboard.s: link.movey = 1
+
+def on_key_down(key):
+    if key.name == &quot;SPACE&quot;:
+        sword.frame = 10
+        sword.dir = link.dir
+        sword.image = &quot;sword_&quot;+str(sword.dir)
+        sword.x = link.x + (myDirs[sword.dir][0]*30)
+        sword.y = link.y + (myDirs[sword.dir][1]*30)
+
+def moveChars():
+    global mapScrollx,mapScrolly,mapx,mapy
+    getCharDir(link)
+    if link.movex or link.movey:
+        link.frame += 1
+        if link.frame &gt;= 20: link.frame = 0
+        if link.movex == 1:
+            link.testx = round((link.x-48)/50 + (link.movex))
+        else:
+            link.testx = round((link.x)/50 + (link.movex))
+        if link.movey == 1:
+            link.testy = round((link.y-148)/50 + (link.movey))
+        else:
+            link.testy = round((link.y-100)/50 + (link.movey))
+        testmove = (link.testx+mapx,link.testy+mapy)
+        if mymap.get_at(testmove) == Color(&#x27;black&#x27;):
+            link.x += link.movex*2
+            link.y += link.movey*2
+        link.movex = 0
+        link.movey = 0
+        if link.x &gt; 800 and mapScrollx == 0:
+            mapScrollx = 16
+        if link.x &lt; 0 and mapScrollx == 0:
+            mapScrollx = -16
+        if link.y &gt; 600 and mapScrolly == 0:
+            mapScrolly = 10
+        if link.y &lt; 100 and mapScrolly == 0:
+            mapScrolly = -10
+    for m in monsters:
+        if onScreen(m.x,m.y) and m.state == 10:
+            if (m.x &gt; link.x+50):
+                m.movex = -1
+                m.testx = round((m.x)/50 + (m.movex))
+            else:
+                if (m.x &lt; link.x-50):
+                    m.movex = 1
+                    m.testx = round((m.x-48)/50 + (m.movex))
+            if (m.y &gt; link.y+50):
+                m.movey = -1
+                m.testy = round((m.y-100)/50 + (m.movey))
+            else:
+                if (m.y &lt; link.y-50):
+                    m.movey = 1
+                    m.testy = round((m.y-148)/50 + (m.movey))
+            getCharDir(m)
+            if m.movex or m.movey:
+                m.frame += 1
+                if m.frame &gt;= 20: m.frame = 0
+                testmove = (m.testx+mapx,m.testy+mapy)
+                if mymap.get_at(testmove) == Color(&#x27;black&#x27;):
+                    m.x += m.movex*2
+                    m.y += m.movey*2
+                m.movex = 0
+                m.movey = 0
+
+def getCharDir(ch):
+    for d in range(len(myDirs)):
+        if myDirs[d] == (ch.movex,ch.movey):
+            ch.dir = d
+
+def onScreen(x,y):
+    if(x&gt;0 and x&lt;800 and y&gt;100 and y&lt;800): return True
+    return False
+
+pgzrun.go()
+</code></pre>
+</main>
+
+<script>
+// Zelda
+
+const myDirs = [[0, 1], [-1, 0], [0, -1], [1, 0]];
+
+const monstersXY = [[1325, 375], [1025, -225], [300, -225], [1925, -225], [1925, 375]];
+
+var link, sword, monsters, mymap, mapx, mapy, mapScrollx, mapScrolly;
+
+function reset() {
+  link = new Actor("link_1");
+  link.center = [400, 400];
+  link.frame = 0;
+  link.movex = 0;
+  link.movey = 0;
+  link.dir = 0;
+  link.testx = 0;
+  link.testy = 0;
+  sword = new Actor("sword_1");
+  sword.center = [400, 400];
+  sword.frame = 0;
+  sword.dir = 0;
+  monsters = [];
+  for (let m of monstersXY) {
+    let monster = new Actor('monster_1');
+    monster.center = [m[0], m[1]];
+    monster.state = 10;
+    monster.frame = 0;
+    monster.movex = 0;
+    monster.movey = 0;
+    monster.dir = 0;
+    monster.testx = 0;
+    monster.testy = 0;
+    monsters.push(monster);
+  }
+
+  screen.blit('map', [0, 0]);
+  mymap = screen.getSurface(0, 0, 64, 20);
+  mapx = 0;
+  mapy = 10;
+  mapScrollx = 0;
+  mapScrolly = 0;
+}
+
+function draw() {
+  screen.clear();
+  screen.blit("logo", [612, 10]);
+  screen.draw.text("W, A, S, D TO MOVE", {
+    center: [440, 30],
+    color: [0, 255, 0],
+    fontsize: 30
+  });
+  screen.draw.text("SPACE TO USE SWORD", {
+    center: [440, 70],
+    color: [0, 255, 0],
+    fontsize: 30
+  });
+  drawMap();
+  drawChars();
+}
+
+function drawMap() {
+  let xtest = Math.floor((link.posx / 50) + link.movex),
+      ytest = Math.floor(((link.posy - 100) / 50) + link.movey),
+      col, maprect, mx, my, linkrect;
+  for (let x = 0; x < 16; x++) {
+    for (let y = 0; y < 10; y++) {
+      col = mymap.getAt(x + mapx, y + mapy);
+      if (Surface.isColorEqual(col, [0, 255, 0])) {
+        screen.blit("tree", [x * 50, (y * 50) + 100]);
+      }
+      if (Surface.isColorEqual(col, [0, 0, 0])) {
+        screen.blit("ground", [x * 50, (y * 50) + 100]);
+      }
+      if (Surface.isColorEqual(col, [255, 0, 0])) {
+        screen.blit("boulder", [x * 50, (y * 50) + 100]);
+      }
+      if (Surface.isColorEqual(col, [255, 255, 0])) {
+        screen.blit("rock", [x * 50, (y * 50) + 100]);
+      }
+    }
+  }
+  maprect = new Rect([10, 10], [266, 80]);
+  screen.draw.filled_rect(maprect, [100, 100, 100]);
+  mx = (mapx * 50) + link.posx;
+  my = (mapy * 50) + link.posy;
+  linkrect = new Rect([(mx / 12) + 10, my / 12], [4, 4]);
+  screen.draw.filled_rect(linkrect, [0, 255, 0]);
+}
+
+function drawChars() {
+  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed(0);
+  if ((sword.frame > 0) && (sword.dir === 2)) {
+    sword.draw();
+  }
+  link.draw();
+  if ((sword.frame > 0) && (sword.dir !== 2)) {
+    sword.draw();
+  }
+  for (let m of monsters) {
+    if (onScreen(m.posx, m.posy) && (m.state > 0)) {
+      if (m.state < 10) {
+        m.angle += 10;
+        m.state -= 1;
+      }
+      if (m.state === 10) {
+        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed(0);
+      }
+      m.draw();
+    }
+  }
+}
+
+function update() {
+  checkInput();
+  moveChars();
+  if (mapScrollx > 0) {
+    mapScroll(1, 0);
+  }
+  if (mapScrollx < 0) {
+    mapScroll(-1, 0);
+  }
+  if (mapScrolly > 0) {
+    mapScroll(0, 1);
+  }
+  if (mapScrolly < 0) {
+    mapScroll(0, -1);
+  }
+  if (sword.frame > 0) {
+    if (sword.frame > 5) {
+      sword.posx += myDirs[sword.dir][0] * 2;
+      sword.posy += myDirs[sword.dir][1] * 2;
+    }
+    else {
+      sword.posx -= myDirs[sword.dir][0] * 2;
+      sword.posy -= myDirs[sword.dir][1] * 2;
+    }
+    sword.frame -= 1;
+    for (let m of monsters) {
+      if (m.collidepoint([sword.posx, sword.posy])) {
+        m.state = 9;
+      }
+    }
+  }
+}
+
+function mapScroll(x, y) {
+  mapx += x;
+  mapScrollx -= x;
+  link.posx -= x * 50;
+  mapy += y;
+  mapScrolly -= y;
+  link.posy -= y * 50;
+  for (let m of monsters) {
+    m.posx -= x * 50;
+    m.posy -= y * 50;
+  }
+}
+
+function checkInput() {
+  if (keyboard[keys.A]) {
+    link.movex = -1;
+  }
+  if (keyboard[keys.D]) {
+    link.movex = 1;
+  }
+  if (keyboard[keys.W]) {
+    link.movey = -1;
+  }
+  if (keyboard[keys.S]) {
+    link.movey = 1;
+  }
+}
+
+function on_key_down(key) {
+  if (key === keys.SPACE) {
+    sword.frame = 10;
+    sword.dir = link.dir;
+    sword.name = "sword_" + sword.dir;
+    sword.posx = link.posx + (myDirs[sword.dir][0] * 30);
+    sword.posy = link.posy + (myDirs[sword.dir][1] * 30);
+  }
+}
+
+function moveChars() {
+  getCharDir(link);
+  if ((link.movex !== 0) || (link.movey !== 0)) {
+    link.frame += 1;
+    if (link.frame >= 20) {
+      link.frame = 0;
+    }
+    if (link.movex === 1) {
+      link.testx = Math.round(((link.posx - 48) / 50) + link.movex);
+    }
+    else {
+      link.testx = Math.round((link.posx / 50) + link.movex);
+    }
+    if (link.movey === 1) {
+      link.testy = Math.round(((link.posy - 148) / 50) + link.movey);
+    }
+    else {
+      link.testy = Math.round(((link.posy - 100) / 50) + link.movey);
+    }
+    if (Surface.isColorEqual(mymap.getAt(link.testx + mapx, link.testy + mapy), [0, 0, 0])) {
+      link.posx += link.movex * 2;
+      link.posy += link.movey * 2;
+    }
+    link.movex = 0;
+    link.movey = 0;
+    if ((link.posx > 800) && (mapScrollx === 0)) {
+      mapScrollx = 16;
+    }
+    if ((link.posx < 0) && (mapScrollx === 0)) {
+      mapScrollx = -16;
+    }
+    if ((link.posy > 600) && (mapScrolly === 0)) {
+      mapScrolly = 10;
+    }
+    if ((link.posy < 100) && (mapScrolly === 0)) {
+      mapScrolly = -10;
+    }
+  }
+  for (let m of monsters) {
+    if (onScreen(m.posx, m.posy) && (m.state === 10)) {
+      if (m.posx > (link.posx + 50)) {
+        m.movex = -1;
+        m.testx = Math.round((m.posx / 50) + m.movex);
+      }
+      else {
+        if (m.posx < (link.posx - 50)) {
+          m.movex = 1;
+          m.testx = Math.round(((m.posx - 48) / 50) + m.movex);
+        }
+      }
+      if (m.posy > (link.posy + 50)) {
+        m.movey = -1;
+        m.testy = Math.round(((m.posy - 100) / 50) + m.movey);
+      }
+      else {
+        if (m.posy < (link.posy - 50)) {
+          m.movey = 1;
+          m.testy = Math.round(((m.posy - 148) / 50) + m.movey);
+        }
+      }
+      getCharDir(m);
+      if ((m.movex !== 0) || (m.movey !== 0)) {
+        m.frame += 1;
+        if (m.frame >= 20) {
+          m.frame = 0;
+        }
+        if (Surface.isColorEqual(mymap.getAt(m.testx + mapx, m.testy + mapy), [0, 0, 0])) {
+          m.posx += m.movex * 2;
+          m.posy += m.movey * 2;
+        }
+        m.movex = 0;
+        m.movey = 0;
+      }
+    }
+  }
+}
+
+function getCharDir(ch) {
+  for (let d = 0; d < myDirs.length; d++) {
+    if ((myDirs[d][0] === ch.movex) && (myDirs[d][1] === ch.movey)) {
+      ch.dir = d;
+    }
+  }
+}
+
+function onScreen(x, y) {
+  if ((x > 0) && (x < 800) && (y > 100) && (y < 800)) {
+    return true;
+  }
+  return false;
+}
+
+window.addEventListener('load', (event) => {
+  images.LOAD('#imageLoader img');
+  // Non-standard order for Surface
+  screen.set_mode('#screen', '#reset', '#pause');
+  reset();
+  screen.draw.playButton();
+});
+</script>
+</body>
+
+</html>
