@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>zelda</title>
+  <script src="../../jsgame0.js"></script>
+  <script id="map" type="text/plain">
+RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+RRRR          RRRRRR RRRRR    RRRRRRRR     RRRRRRRRRRRRRRRRRRRRR
+RRR            RR  B   RT  BB  TRRR          RRRRR    RRRR  RRRR
+RRR  RRRRRR    RR       T      TRR      B  B  RRR      R     RRR
+RRR   M BBRR   RR   M   T      TR     M       RRR             RR
+RRR      BRR            T    B TR           B  RR              R
+RRR     B RR            T      TT              RR              R
+RRR  RRRRRR    TT       T      TT              RT              R
+RRR            TT       T      TT              TT           RRRR
+RRRRTTTTTTTTTTTTTTTT  TTTTTT  TTTT  TTTTTTTTTTTTTTTTT  TTTTRRRRR
+RRRRTTTTTTTTTTTTTTTT  TTTTTT  TTTT  TTTTTTTTTTTTTTTTT  TTTRRRRRR
+RRTTTTTTTTTTTTTTT      TTT     TT            BBTT          RRRRR
+RR             TT      TTT                     TT             RR
+RR T           TT      TTT                     TT              R
+R  TT                  TBB  B  TRRRRRR                     B   T
+R  TT                   B M    TRRRRRRM                     B  T
+R  TT          TT  B        B  TRRRRRR         RRR             T
+R  T           TTBBB           TRRR            RRRRR   B   B  TT
+RR             TTBBBB          TRRRR         RRRRRRRR       TTTT
+RRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTRRRRRRRRRRRRRRRRRRRRRRRRRRRRTTTT
+  </script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/boulder.png" alt="boulder" data-name="boulder">
+  <img class="hidden" src="images/ground.png" alt="ground" data-name="ground">
+  <img class="hidden" src="images/link_1.png" alt="link_1" data-name="link_1">
+  <img class="hidden" src="images/link_2.png" alt="link_2" data-name="link_2">
+  <img class="hidden" src="images/link_3.png" alt="link_3" data-name="link_3">
+  <img class="hidden" src="images/link_4.png" alt="link_4" data-name="link_4">
+  <img class="hidden" src="images/link_5.png" alt="link_5" data-name="link_5">
+  <img class="hidden" src="images/link_6.png" alt="link_6" data-name="link_6">
+  <img class="hidden" src="images/link_7.png" alt="link_7" data-name="link_7">
+  <img class="hidden" src="images/link_8.png" alt="link_8" data-name="link_8">
+  <img class="hidden" src="images/logo.png" alt="logo" data-name="logo">
+  <img class="hidden" src="images/monster_1.png" alt="monster_1" data-name="monster_1">
+  <img class="hidden" src="images/monster_2.png" alt="monster_2" data-name="monster_2">
+  <img class="hidden" src="images/monster_3.png" alt="monster_3" data-name="monster_3">
+  <img class="hidden" src="images/monster_4.png" alt="monster_4" data-name="monster_4">
+  <img class="hidden" src="images/monster_5.png" alt="monster_5" data-name="monster_5">
+  <img class="hidden" src="images/monster_6.png" alt="monster_6" data-name="monster_6">
+  <img class="hidden" src="images/monster_7.png" alt="monster_7" data-name="monster_7">
+  <img class="hidden" src="images/monster_8.png" alt="monster_8" data-name="monster_8">
+  <img class="hidden" src="images/rock.png" alt="rock" data-name="rock">
+  <img class="hidden" src="images/sword_0.png" alt="sword_0" data-name="sword_0">
+  <img class="hidden" src="images/sword_1.png" alt="sword_1" data-name="sword_1">
+  <img class="hidden" src="images/sword_2.png" alt="sword_2" data-name="sword_2">
+  <img class="hidden" src="images/sword_3.png" alt="sword_3" data-name="sword_3">
+  <img class="hidden" src="images/tree.png" alt="tree" data-name="tree">
+</section>
+
+<main>
+<h1>zelda</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<h2>Attribution</h2>
+
+<p><a href="https://wireframe.raspberrypi.com/issues/61">Code your own top-down Zelda-like, pages 55-57, by Mark Vanstone</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<p><a href="https://www.raspberrypi.com/news/code-your-own-top-down-zelda-like-wireframe-61/">Blog post of Source Code</a>.</p>
+
+<h2>Original Python code</h2>
+
+<pre id="original"><code>
+# Zelda
+import pgzrun
+import math
+from pygame import image, Color
+
+link = Actor(&quot;link_1&quot;,center=(400,400))
+link.frame = link.movex = link.movey = link.dir = link.testx = link.testy = 0
+sword = Actor(&quot;sword_1&quot;,center=(400,400))
+sword.frame = sword.dir = 0
+myDirs = [(0,1),(-1,0),(0,-1),(1,0)]
+monstersXY = [(1325,375),(1025,-225),(300,-225),(1925,-225),(1925,375)]
+monsters = []
+for m in monstersXY:
+    monsters.append(Actor(&#x27;monster_1&#x27;, center=(m[0], m[1])))
+    l = len(monsters)-1
+    monsters[l].state = 10
+    monsters[l].frame = monsters[l].movex = monsters[l].movey = monsters[l].dir = monsters[l].testx = monsters[l].testy = 0
+
+mymap = image.load(&#x27;images/map.png&#x27;)
+mapx = 0
+mapy = 10
+mapScrollx = 0
+mapScrolly = 0
+
+def draw():
+    screen.clear()
+    screen.blit(&quot;logo&quot;,(612,10))
+    screen.draw.text(&quot;W, A, S, D TO MOVE&quot;, center= (440, 30), color=(0,255,0) , fontsize=30)
+    screen.draw.text(&quot;SPACE TO USE SWORD&quot;, center= (440, 70), color=(0,255,0) , fontsize=30)
+    drawMap()
+    drawChars()
+
+def drawMap():
+    xtest = math.floor(link.x/50 + (link.movex))
+    ytest = math.floor((link.y-100)/50 + (link.movey))
+    for x in range(16):
+        for y in range(10):
+            col = mymap.get_at((x+mapx,y+mapy))
+            if col == (0,255,0): screen.blit(&quot;tree&quot;,(x*50,(y*50)+100))
+            if col == (0,0,0): screen.blit(&quot;ground&quot;,(x*50,(y*50)+100))
+            if col == (255,0,0): screen.blit(&quot;boulder&quot;,(x*50,(y*50)+100))
+            if col == (255,255,0): screen.blit(&quot;rock&quot;,(x*50,(y*50)+100))
+    maprect = Rect((10, 10), (266, 80))
+    screen.draw.filled_rect(maprect, (100, 100, 100))
+    mx = (mapx*50)+link.x
+    my = (mapy*50)+link.y
+    linkrect = Rect(((mx/12)+10, (my/12)), (4, 4))
+    screen.draw.filled_rect(linkrect, (0, 255, 0))
+
+def drawChars():
+    link.image = &quot;link_&quot;+str(((link.dir*2)+1)+math.floor(link.frame/10))
+    if sword.frame &gt; 0 and sword.dir == 2:
+        sword.draw()
+    link.draw()
+    if sword.frame &gt; 0 and sword.dir != 2:
+        sword.draw()
+    for m in monsters:
+        if onScreen(m.x,m.y) and m.state &gt; 0:
+            if m.state &lt; 10:
+                m.angle += 10
+                m.state -= 1
+            if m.state == 10: m.image = &quot;monster_&quot;+str(((m.dir*2)+1)+math.floor(m.frame/10))
+            m.draw()
+
+def update():
+    global mapScrollx, mapScrolly,mapx,mapy
+    checkInput()
+    moveChars()
+    if(mapScrollx &gt; 0): mapScroll(1,0)
+    if(mapScrollx &lt; 0): mapScroll(-1,0)
+    if(mapScrolly &gt; 0): mapScroll(0,1)
+    if(mapScrolly &lt; 0): mapScroll(0,-1)
+    if sword.frame &gt; 0:
+        if(sword.frame &gt; 5):
+            sword.x += myDirs[sword.dir][0]*2
+            sword.y += myDirs[sword.dir][1]*2
+        else:
+            sword.x -= myDirs[sword.dir][0]*2
+            sword.y -= myDirs[sword.dir][1]*2
+        sword.frame -= 1
+        for m in monsters:
+            if m.collidepoint((sword.x, sword.y)):
+                m.state = 9
+
+def mapScroll(x,y):
+    global mapScrollx, mapScrolly,mapx,mapy
+    mapx += x
+    mapScrollx -= x
+    link.x -= x*50
+    mapy += y
+    mapScrolly -= y
+    link.y -= y*50
+    for m in monsters:
+        m.x -= x*50
+        m.y -= y*50
+
+def checkInput():
+    if keyboard.a: link.movex = -1
+    if keyboard.d: link.movex = 1
+    if keyboard.w: link.movey = -1
+    if keyboard.s: link.movey = 1
+
+def on_key_down(key):
+    if key.name == &quot;SPACE&quot;:
+        sword.frame = 10
+        sword.dir = link.dir
+        sword.image = &quot;sword_&quot;+str(sword.dir)
+        sword.x = link.x + (myDirs[sword.dir][0]*30)
+        sword.y = link.y + (myDirs[sword.dir][1]*30)
+
+def moveChars():
+    global mapScrollx,mapScrolly,mapx,mapy
+    getCharDir(link)
+    if link.movex or link.movey:
+        link.frame += 1
+        if link.frame &gt;= 20: link.frame = 0
+        if link.movex == 1:
+            link.testx = round((link.x-48)/50 + (link.movex))
+        else:
+            link.testx = round((link.x)/50 + (link.movex))
+        if link.movey == 1:
+            link.testy = round((link.y-148)/50 + (link.movey))
+        else:
+            link.testy = round((link.y-100)/50 + (link.movey))
+        testmove = (link.testx+mapx,link.testy+mapy)
+        if mymap.get_at(testmove) == Color(&#x27;black&#x27;):
+            link.x += link.movex*2
+            link.y += link.movey*2
+        link.movex = 0
+        link.movey = 0
+        if link.x &gt; 800 and mapScrollx == 0:
+            mapScrollx = 16
+        if link.x &lt; 0 and mapScrollx == 0:
+            mapScrollx = -16
+        if link.y &gt; 600 and mapScrolly == 0:
+            mapScrolly = 10
+        if link.y &lt; 100 and mapScrolly == 0:
+            mapScrolly = -10
+    for m in monsters:
+        if onScreen(m.x,m.y) and m.state == 10:
+            if (m.x &gt; link.x+50):
+                m.movex = -1
+                m.testx = round((m.x)/50 + (m.movex))
+            else:
+                if (m.x &lt; link.x-50):
+                    m.movex = 1
+                    m.testx = round((m.x-48)/50 + (m.movex))
+            if (m.y &gt; link.y+50):
+                m.movey = -1
+                m.testy = round((m.y-100)/50 + (m.movey))
+            else:
+                if (m.y &lt; link.y-50):
+                    m.movey = 1
+                    m.testy = round((m.y-148)/50 + (m.movey))
+            getCharDir(m)
+            if m.movex or m.movey:
+                m.frame += 1
+                if m.frame &gt;= 20: m.frame = 0
+                testmove = (m.testx+mapx,m.testy+mapy)
+                if mymap.get_at(testmove) == Color(&#x27;black&#x27;):
+                    m.x += m.movex*2
+                    m.y += m.movey*2
+                m.movex = 0
+                m.movey = 0
+
+def getCharDir(ch):
+    for d in range(len(myDirs)):
+        if myDirs[d] == (ch.movex,ch.movey):
+            ch.dir = d
+
+def onScreen(x,y):
+    if(x&gt;0 and x&lt;800 and y&gt;100 and y&lt;800): return True
+    return False
+
+pgzrun.go()
+</code></pre>
+</main>
+
+<script>
+// Zelda
+
+const myDirs = [[0, 1], [-1, 0], [0, -1], [1, 0]];
+
+const monstersXY = [[1325, 375], [1025, -225], [300, -225], [1925, -225], [1925, 375]];
+
+class WorldMap {
+  /*
+   * Integer arbitrary value in [0, 255] to indicated a boulder in the map.
+   */
+  static BOULDER_VALUE = 20;
+
+  /*
+   * Integer arbitrary value in [0, 255] to indicated a monster in the map.
+   */
+  static MONSTER_VALUE = 10;
+
+  /*
+   * Integer arbitrary value in [0, 255] to indicated a rock in the map.
+   */
+  static ROCK_VALUE = 30;
+
+  /*
+   * Integer arbitrary value in [0, 255] to indicated a tree in the map.
+   */
+  static TREE_VALUE = 40;
+
+  constructor(width, height) {
+    if (typeof width !== 'number') {
+      throw new TypeError('width must be a positive number.');
+    }
+    if (typeof height !== 'number') {
+      throw new TypeError('height must be a positive number.');
+    }
+    if (width <= 0) {
+      throw new RangeError('width must be a positive number.');
+    }
+    if (height <= 0) {
+      throw new RangeError('height must be a positive number.');
+    }
+
+    this.width = width;
+    this.height = height;
+    this.array = new Uint8ClampedArray(this.width * this.height);
+  }
+
+  /*
+   * Return the value at coordinates (x, y).
+   */
+  getAt(x = 0, y = 0, fallback = 0) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+
+    if (x < 0) {
+      return fallback;
+    }
+    if (y < 0) {
+      return fallback;
+    }
+    if (this.width <= x) {
+      return fallback;
+    }
+    if (this.height <= y) {
+      return fallback;
+    }
+    return this.array[(y*this.width)+x];
+  }
+
+  /*
+   * Set the value at coordinates (x, y) to value.
+   */
+  setAt(x, y, value) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+    if (typeof value !== 'number') {
+      throw new TypeError('value must be a number.');
+    }
+
+    if (x < 0) {
+      return;
+    }
+    if (y < 0) {
+      return;
+    }
+    if (this.width <= x) {
+      return;
+    }
+    if (this.height <= y) {
+      return;
+    }
+    this.array[(y*this.width)+x] = value;
+  }
+
+  /*
+   * Return true if the value at coordinates (x, y) is value.
+   */
+  isHelper(x, y, value) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+
+    if (x < 0) {
+      return false;
+    }
+    if (y < 0) {
+      return false;
+    }
+    if (this.width <= x) {
+      return false;
+    }
+    if (this.height <= y) {
+      return false;
+    }
+    return (this.getAt(x, y) === value);
+  }
+
+  /*
+   * Return true if a boulder is at coordinates (x, y).
+   */
+  isBoulder(x = 0, y = 0) {
+    return this.isHelper(x, y, WorldMap.BOULDER_VALUE);
+  }
+
+  /*
+   * Return true if a monster is at coordinates (x, y).
+   */
+  isMonster(x = 0, y = 0) {
+    return this.isHelper(x, y, WorldMap.MONSTER_VALUE);
+  }
+
+  /*
+   * Return true if a rock is at coordinates (x, y).
+   */
+  isRock(x = 0, y = 0) {
+    return this.isHelper(x, y, WorldMap.ROCK_VALUE);
+  }
+
+  /*
+   * Return true if a tree is at coordinates (x, y).
+   */
+  isTree(x = 0, y = 0) {
+    return this.isHelper(x, y, WorldMap.TREE_VALUE);
+  }
+
+  /*
+   * Return true if the coordinates (x, y) is blocked.
+   */
+  isBlocked(x = 0, y = 0) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+
+    if (x < 0) {
+      return true;
+    }
+    if (y < 0) {
+      return true;
+    }
+    if (this.width <= x) {
+      return true;
+    }
+    if (this.height <= y) {
+      return true;
+    }
+    return (this.isBoulder(x, y) || this.isRock(x, y) || this.isTree(x, y));
+  }
+
+
+  /*
+   * Return a WorldMap instance created from the world map in text.
+   *
+   * Each line in text cannot start or end with whitespace.
+   */
+  static loadMap(text) {
+    if (typeof text !== 'string') {
+      throw new TypeError('text must be a string.');
+    }
+
+    let lines = text.trim().split('\n').map((l) => l.trim()).filter((l) => (l.length > 0)),
+        width = Math.max(...lines.map((l) => l.length)),
+        height = lines.length,
+        world = new WorldMap(width, height),
+        y = 0,
+        x;
+    for (let line of lines) {
+      x = 0;
+      for (let char of line) {
+        if (char === 'B') {
+          world.setAt(x, y, WorldMap.BOULDER_VALUE);
+        }
+        else if (char === 'M') {
+          world.setAt(x, y, WorldMap.MONSTER_VALUE);
+        }
+        else if (char === 'R') {
+          world.setAt(x, y, WorldMap.ROCK_VALUE);
+        }
+        else if (char === 'T') {
+          world.setAt(x, y, WorldMap.TREE_VALUE);
+        }
+        x++;
+      }
+      y++;
+    }
+
+    return world;
+  }
+
+  /*
+   * A short test suite to confirm the WorldMap class works.
+   */
+  static test() {
+    let world = new WorldMap(2, 3);
+    console.assert(world.width === 2,
+                   {msg: 'this.width is incorrect.'});
+    console.assert(world.height === 3,
+                   {msg: 'this.height is incorrect.'});
+    console.assert(world.array.every((v) => (v === 0)),
+                   {msg: 'this.array incorrectly initialized.'});
+    console.assert(world.getAt() === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1) === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 2) === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 2, 3) === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(!world.isBoulder(),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(!world.isBoulder(1),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(!world.isBoulder(1, 2),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(!world.isMonster(),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isMonster(1),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isMonster(1, 2),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isRock(),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(!world.isRock(1),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(!world.isRock(1, 2),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(!world.isTree(),
+                   {msg: 'this.isTree() failed.'});
+    console.assert(!world.isTree(1),
+                   {msg: 'this.isTree() failed.'});
+    console.assert(!world.isTree(1, 2),
+                   {msg: 'this.isTree() failed.'});
+    console.assert(!world.isBlocked(),
+                   {msg: 'this.isBlocked() failed.'});
+    console.assert(!world.isBlocked(1),
+                   {msg: 'this.isBlocked() failed.'});
+    console.assert(!world.isBlocked(1, 2),
+                   {msg: 'this.isBlocked() failed.'});
+    world.setAt(0, 2, WorldMap.MONSTER_VALUE);
+    console.assert(!world.isMonster(0, 0),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isMonster(0, 1),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(world.isMonster(0, 2),
+                   {msg: 'this.isMonster() failed.'});
+    for (let x = 0; x < world.width; x++) {
+      for (let y = 0; y < world.height; y++) {
+        console.assert(!world.isBoulder(x, y),
+                       {msg: 'this.isBoulder() failed.'});
+        console.assert(!world.isRock(x, y),
+                       {msg: 'this.isRock() failed.'});
+        console.assert(!world.isTree(x, y),
+                       {msg: 'this.isTree() failed.'});
+        console.assert(!world.isBlocked(x, y),
+                       {msg: 'this.isBlocked() failed.'});
+      }
+    }
+    world.setAt(1, 0, WorldMap.BOULDER_VALUE);
+    world.setAt(1, 1, WorldMap.ROCK_VALUE);
+    world.setAt(1, 2, WorldMap.TREE_VALUE);
+    console.assert(!world.isBoulder(0, 0),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(world.isBoulder(1, 0),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(!world.isRock(0, 1),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(world.isRock(1, 1),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(!world.isTree(0, 2),
+                   {msg: 'this.isTree() failed.'});
+    console.assert(world.isTree(1, 2),
+                   {msg: 'this.isTree() failed.'});
+    for (let x = 0; x < world.width; x++) {
+      for (let y = 0; y < world.height; y++) {
+        console.assert(world.isBlocked(x, y) === (x === 1),
+                       {msg: 'this.isBlocked() failed.'});
+      }
+    }
+
+    world = WorldMap.loadMap(['M B', 'R T'].join('\n'));
+    console.assert(world.width === 3,
+                   {msg: 'this.width is incorrect.'});
+    console.assert(world.height === 2,
+                   {msg: 'this.height is incorrect.'});
+    console.assert(world.isMonster(0, 0),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isMonster(1, 0),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isMonster(2, 0),
+                   {msg: 'this.isMonster() failed.'});
+    console.assert(!world.isBoulder(1, 0),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(world.isBoulder(2, 0),
+                   {msg: 'this.isBoulder() failed.'});
+    console.assert(!world.isRock(0, 0),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(world.isRock(0, 1),
+                   {msg: 'this.isRock() failed.'});
+    console.assert(!world.isTree(2, 0),
+                   {msg: 'this.isTree() failed.'});
+    console.assert(world.isTree(2, 1),
+                   {msg: 'this.isTree() failed.'});
+  }
+}
+WorldMap.test();
+
+var link, sword, monsters, mymap, mapx, mapy, mapScrollx, mapScrolly;
+
+function reset() {
+  link = new Actor("link_1");
+  link.center = [400, 400];
+  link.frame = 0;
+  link.movex = 0;
+  link.movey = 0;
+  link.dir = 0;
+  link.testx = 0;
+  link.testy = 0;
+  sword = new Actor("sword_1");
+  sword.center = [400, 400];
+  sword.frame = 0;
+  sword.dir = 0;
+  monsters = [];
+  for (let m of monstersXY) {
+    let monster = new Actor('monster_1');
+    monster.center = [m[0], m[1]];
+    monster.state = 10;
+    monster.frame = 0;
+    monster.movex = 0;
+    monster.movey = 0;
+    monster.dir = 0;
+    monster.testx = 0;
+    monster.testy = 0;
+    monsters.push(monster);
+  }
+
+  mymap = WorldMap.loadMap(document.querySelector('#map').textContent);
+  mapx = 0;
+  mapy = 10;
+  mapScrollx = 0;
+  mapScrolly = 0;
+}
+
+function draw() {
+  screen.clear();
+  screen.blit("logo", [612, 10]);
+  screen.draw.text("W, A, S, D TO MOVE", {
+    center: [440, 30],
+    color: [0, 255, 0],
+    fontsize: 30
+  });
+  screen.draw.text("SPACE TO USE SWORD", {
+    center: [440, 70],
+    color: [0, 255, 0],
+    fontsize: 30
+  });
+  drawMap();
+  drawChars();
+}
+
+function drawMap() {
+  let xtest = Math.floor((link.posx / 50) + link.movex),
+      ytest = Math.floor(((link.posy - 100) / 50) + link.movey),
+      tile, maprect, mx, my, linkrect;
+  for (let x = 0; x < 16; x++) {
+    for (let y = 0; y < 10; y++) {
+      if (mymap.isBoulder(x + mapx, y + mapy)) {
+        tile = 'boulder';
+      }
+      else if (mymap.isRock(x + mapx, y + mapy)) {
+        tile = 'rock';
+      }
+      else if (mymap.isTree(x + mapx, y + mapy)) {
+        tile = 'tree';
+      }
+      else {
+        tile = 'ground';
+      }
+      screen.blit(tile, [x * 50, (y * 50) + 100]);
+    }
+  }
+  maprect = new Rect([10, 10], [266, 80]);
+  screen.draw.filled_rect(maprect, [100, 100, 100]);
+  mx = (mapx * 50) + link.posx;
+  my = (mapy * 50) + link.posy;
+  linkrect = new Rect([(mx / 12) + 10, my / 12], [4, 4]);
+  screen.draw.filled_rect(linkrect, [0, 255, 0]);
+}
+
+function drawChars() {
+  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed(0);
+  if ((sword.frame > 0) && (sword.dir === 2)) {
+    sword.draw();
+  }
+  link.draw();
+  if ((sword.frame > 0) && (sword.dir !== 2)) {
+    sword.draw();
+  }
+  for (let m of monsters) {
+    if (onScreen(m.posx, m.posy) && (m.state > 0)) {
+      if (m.state < 10) {
+        m.angle += 10;
+        m.state -= 1;
+      }
+      if (m.state === 10) {
+        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed(0);
+      }
+      m.draw();
+    }
+  }
+}
+
+function update() {
+  checkInput();
+  moveChars();
+  if (mapScrollx > 0) {
+    mapScroll(1, 0);
+  }
+  if (mapScrollx < 0) {
+    mapScroll(-1, 0);
+  }
+  if (mapScrolly > 0) {
+    mapScroll(0, 1);
+  }
+  if (mapScrolly < 0) {
+    mapScroll(0, -1);
+  }
+  if (sword.frame > 0) {
+    if (sword.frame > 5) {
+      sword.posx += myDirs[sword.dir][0] * 2;
+      sword.posy += myDirs[sword.dir][1] * 2;
+    }
+    else {
+      sword.posx -= myDirs[sword.dir][0] * 2;
+      sword.posy -= myDirs[sword.dir][1] * 2;
+    }
+    sword.frame -= 1;
+    for (let m of monsters) {
+      if (m.collidepoint([sword.posx, sword.posy])) {
+        m.state = 9;
+      }
+    }
+  }
+}
+
+function mapScroll(x, y) {
+  mapx += x;
+  mapScrollx -= x;
+  link.posx -= x * 50;
+  mapy += y;
+  mapScrolly -= y;
+  link.posy -= y * 50;
+  for (let m of monsters) {
+    m.posx -= x * 50;
+    m.posy -= y * 50;
+  }
+}
+
+function checkInput() {
+  if (keyboard[keys.A]) {
+    link.movex = -1;
+  }
+  if (keyboard[keys.D]) {
+    link.movex = 1;
+  }
+  if (keyboard[keys.W]) {
+    link.movey = -1;
+  }
+  if (keyboard[keys.S]) {
+    link.movey = 1;
+  }
+}
+
+function on_key_down(key) {
+  if (key === keys.SPACE) {
+    sword.frame = 10;
+    sword.dir = link.dir;
+    sword.name = "sword_" + sword.dir;
+    sword.posx = link.posx + (myDirs[sword.dir][0] * 30);
+    sword.posy = link.posy + (myDirs[sword.dir][1] * 30);
+  }
+}
+
+function moveChars() {
+  getCharDir(link);
+  if ((link.movex !== 0) || (link.movey !== 0)) {
+    link.frame += 1;
+    if (link.frame >= 20) {
+      link.frame = 0;
+    }
+    if (link.movex === 1) {
+      link.testx = Math.round(((link.posx - 48) / 50) + link.movex);
+    }
+    else {
+      link.testx = Math.round((link.posx / 50) + link.movex);
+    }
+    if (link.movey === 1) {
+      link.testy = Math.round(((link.posy - 148) / 50) + link.movey);
+    }
+    else {
+      link.testy = Math.round(((link.posy - 100) / 50) + link.movey);
+    }
+    if (!mymap.isBlocked(link.testx + mapx, link.testy + mapy)) {
+      link.posx += link.movex * 2;
+      link.posy += link.movey * 2;
+    }
+    link.movex = 0;
+    link.movey = 0;
+    if ((link.posx > 800) && (mapScrollx === 0)) {
+      mapScrollx = 16;
+    }
+    if ((link.posx < 0) && (mapScrollx === 0)) {
+      mapScrollx = -16;
+    }
+    if ((link.posy > 600) && (mapScrolly === 0)) {
+      mapScrolly = 10;
+    }
+    if ((link.posy < 100) && (mapScrolly === 0)) {
+      mapScrolly = -10;
+    }
+  }
+  for (let m of monsters) {
+    if (onScreen(m.posx, m.posy) && (m.state === 10)) {
+      if (m.posx > (link.posx + 50)) {
+        m.movex = -1;
+        m.testx = Math.round((m.posx / 50) + m.movex);
+      }
+      else {
+        if (m.posx < (link.posx - 50)) {
+          m.movex = 1;
+          m.testx = Math.round(((m.posx - 48) / 50) + m.movex);
+        }
+      }
+      if (m.posy > (link.posy + 50)) {
+        m.movey = -1;
+        m.testy = Math.round(((m.posy - 100) / 50) + m.movey);
+      }
+      else {
+        if (m.posy < (link.posy - 50)) {
+          m.movey = 1;
+          m.testy = Math.round(((m.posy - 148) / 50) + m.movey);
+        }
+      }
+      getCharDir(m);
+      if ((m.movex !== 0) || (m.movey !== 0)) {
+        m.frame += 1;
+        if (m.frame >= 20) {
+          m.frame = 0;
+        }
+        if (!mymap.isBlocked(m.testx + mapx, m.testy + mapy)) {
+          m.posx += m.movex * 2;
+          m.posy += m.movey * 2;
+        }
+        m.movex = 0;
+        m.movey = 0;
+      }
+    }
+  }
+}
+
+function getCharDir(ch) {
+  for (let d = 0; d < myDirs.length; d++) {
+    if ((myDirs[d][0] === ch.movex) && (myDirs[d][1] === ch.movey)) {
+      ch.dir = d;
+    }
+  }
+}
+
+function onScreen(x, y) {
+  if ((x > 0) && (x < 800) && (y > 100) && (y < 800)) {
+    return true;
+  }
+  return false;
+}
+
+window.addEventListener('load', (event) => {
+  images.LOAD('#imageLoader img');
+  reset();
+  screen.set_mode('#screen', '#reset', '#pause');
+});
+</script>
+</body>
+
+</html>
