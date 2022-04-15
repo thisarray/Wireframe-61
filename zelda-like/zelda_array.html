@@ -278,27 +278,21 @@ const myDirs = [[0, 1], [-1, 0], [0, -1], [1, 0]];
 
 const monstersXY = [[1325, 375], [1025, -225], [300, -225], [1925, -225], [1925, 375]];
 
+/*
+ * Map each string tile name to an arbitrary integer in [0, 255].
+ */
+const TILE_MAP = new Map([
+  ['ground', 0],
+  ['boulder', 11],
+  ['monster', 255],
+  ['rock', 22],
+  ['tree', 33]
+]);
+
+/*
+ * Class containing the location of every tile in the world.
+ */
 class WorldMap {
-  /*
-   * Integer arbitrary value in [0, 255] to indicated a boulder in the map.
-   */
-  static BOULDER_VALUE = 20;
-
-  /*
-   * Integer arbitrary value in [0, 255] to indicated a monster in the map.
-   */
-  static MONSTER_VALUE = 10;
-
-  /*
-   * Integer arbitrary value in [0, 255] to indicated a rock in the map.
-   */
-  static ROCK_VALUE = 30;
-
-  /*
-   * Integer arbitrary value in [0, 255] to indicated a tree in the map.
-   */
-  static TREE_VALUE = 40;
-
   constructor(width, height) {
     if (typeof width !== 'number') {
       throw new TypeError('width must be a positive number.');
@@ -354,6 +348,9 @@ class WorldMap {
     if (typeof y !== 'number') {
       throw new TypeError('y must be a number.');
     }
+    if (typeof value === 'string') {
+      value = TILE_MAP.get(value);
+    }
     if (typeof value !== 'number') {
       throw new TypeError('value must be a number.');
     }
@@ -374,9 +371,9 @@ class WorldMap {
   }
 
   /*
-   * Return true if the value at coordinates (x, y) is value.
+   * Return true if the tile at coordinates (x, y) is tile.
    */
-  isHelper(x, y, value) {
+  isTile(x, y, tile) {
     if (typeof x !== 'number') {
       throw new TypeError('x must be a number.');
     }
@@ -396,35 +393,7 @@ class WorldMap {
     if (this.height <= y) {
       return false;
     }
-    return (this.getAt(x, y) === value);
-  }
-
-  /*
-   * Return true if a boulder is at coordinates (x, y).
-   */
-  isBoulder(x = 0, y = 0) {
-    return this.isHelper(x, y, WorldMap.BOULDER_VALUE);
-  }
-
-  /*
-   * Return true if a monster is at coordinates (x, y).
-   */
-  isMonster(x = 0, y = 0) {
-    return this.isHelper(x, y, WorldMap.MONSTER_VALUE);
-  }
-
-  /*
-   * Return true if a rock is at coordinates (x, y).
-   */
-  isRock(x = 0, y = 0) {
-    return this.isHelper(x, y, WorldMap.ROCK_VALUE);
-  }
-
-  /*
-   * Return true if a tree is at coordinates (x, y).
-   */
-  isTree(x = 0, y = 0) {
-    return this.isHelper(x, y, WorldMap.TREE_VALUE);
+    return (this.getAt(x, y) === TILE_MAP.get(tile));
   }
 
   /*
@@ -450,7 +419,12 @@ class WorldMap {
     if (this.height <= y) {
       return true;
     }
-    return (this.isBoulder(x, y) || this.isRock(x, y) || this.isTree(x, y));
+    for (let tile of ['boulder', 'rock', 'tree']) {
+      if (this.isTile(x, y, tile)) {
+        return true;
+      }
+    }
+    return false;
   }
 
 
@@ -474,16 +448,16 @@ class WorldMap {
       x = 0;
       for (let char of line) {
         if (char === 'B') {
-          world.setAt(x, y, WorldMap.BOULDER_VALUE);
+          world.setAt(x, y, 'boulder');
         }
         else if (char === 'M') {
-          world.setAt(x, y, WorldMap.MONSTER_VALUE);
+          world.setAt(x, y, 'monster');
         }
         else if (char === 'R') {
-          world.setAt(x, y, WorldMap.ROCK_VALUE);
+          world.setAt(x, y, 'rock');
         }
         else if (char === 'T') {
-          world.setAt(x, y, WorldMap.TREE_VALUE);
+          world.setAt(x, y, 'tree');
         }
         x++;
       }
@@ -497,6 +471,17 @@ class WorldMap {
    * A short test suite to confirm the WorldMap class works.
    */
   static test() {
+    for (let [k, v] of TILE_MAP) {
+      console.assert(TILE_MAP.get(k) === v,
+                     {msg: 'TILE_MAP is incorrect.'});
+      console.assert(k === k.toLowerCase(),
+                     {msg: 'TILE_MAP is incorrect.'});
+      console.assert(0 <= v,
+                     {msg: 'TILE_MAP is incorrect.'});
+      console.assert(v <= 255,
+                     {msg: 'TILE_MAP is incorrect.'});
+    }
+
     let world = new WorldMap(2, 3);
     console.assert(world.width === 2,
                    {msg: 'this.width is incorrect.'});
@@ -512,70 +497,67 @@ class WorldMap {
                    {msg: 'this.getAt() failed.'});
     console.assert(world.getAt(1, 2, 3) === 0,
                    {msg: 'this.getAt() failed.'});
-    console.assert(!world.isBoulder(),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(!world.isBoulder(1),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(!world.isBoulder(1, 2),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(!world.isMonster(),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isMonster(1),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isMonster(1, 2),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isRock(),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(!world.isRock(1),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(!world.isRock(1, 2),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(!world.isTree(),
-                   {msg: 'this.isTree() failed.'});
-    console.assert(!world.isTree(1),
-                   {msg: 'this.isTree() failed.'});
-    console.assert(!world.isTree(1, 2),
-                   {msg: 'this.isTree() failed.'});
+    for (let tile of TILE_MAP.keys()) {
+      if (tile === 'ground') {
+        console.assert(world.isTile(1, 2, tile),
+                       {msg: 'this.isTile() failed.'});
+      }
+      else {
+        console.assert(!world.isTile(1, 2, tile),
+                       {msg: 'this.isTile() failed.'});
+      }
+    }
     console.assert(!world.isBlocked(),
                    {msg: 'this.isBlocked() failed.'});
     console.assert(!world.isBlocked(1),
                    {msg: 'this.isBlocked() failed.'});
     console.assert(!world.isBlocked(1, 2),
                    {msg: 'this.isBlocked() failed.'});
-    world.setAt(0, 2, WorldMap.MONSTER_VALUE);
-    console.assert(!world.isMonster(0, 0),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isMonster(0, 1),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(world.isMonster(0, 2),
-                   {msg: 'this.isMonster() failed.'});
+    world.setAt(0, 2, 255);
+    console.assert(world.getAt(0, 2) === TILE_MAP.get('monster'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(!world.isTile(0, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 1, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(0, 2, 'monster'),
+                   {msg: 'this.isTile() failed.'});
     for (let x = 0; x < world.width; x++) {
       for (let y = 0; y < world.height; y++) {
-        console.assert(!world.isBoulder(x, y),
-                       {msg: 'this.isBoulder() failed.'});
-        console.assert(!world.isRock(x, y),
-                       {msg: 'this.isRock() failed.'});
-        console.assert(!world.isTree(x, y),
-                       {msg: 'this.isTree() failed.'});
+        for (let tile of TILE_MAP.keys()) {
+          if ((tile === 'ground') || (tile === 'monster')) {
+            continue;
+          }
+          else {
+            console.assert(!world.isTile(x, y, tile),
+                           {msg: 'this.isTile() failed.'});
+          }
+        }
         console.assert(!world.isBlocked(x, y),
                        {msg: 'this.isBlocked() failed.'});
       }
     }
-    world.setAt(1, 0, WorldMap.BOULDER_VALUE);
-    world.setAt(1, 1, WorldMap.ROCK_VALUE);
-    world.setAt(1, 2, WorldMap.TREE_VALUE);
-    console.assert(!world.isBoulder(0, 0),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(world.isBoulder(1, 0),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(!world.isRock(0, 1),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(world.isRock(1, 1),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(!world.isTree(0, 2),
-                   {msg: 'this.isTree() failed.'});
-    console.assert(world.isTree(1, 2),
-                   {msg: 'this.isTree() failed.'});
+    world.setAt(1, 0, TILE_MAP.get('boulder'));
+    world.setAt(1, 1, 'rock');
+    world.setAt(1, 2, 'tree');
+    console.assert(world.getAt(1, 0) === TILE_MAP.get('boulder'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 1) === TILE_MAP.get('rock'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 2) === TILE_MAP.get('tree'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(!world.isTile(0, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(1, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 1, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(1, 1, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 2, 'tree'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(1, 2, 'tree'),
+                   {msg: 'this.isTile() failed.'});
     for (let x = 0; x < world.width; x++) {
       for (let y = 0; y < world.height; y++) {
         console.assert(world.isBlocked(x, y) === (x === 1),
@@ -588,24 +570,24 @@ class WorldMap {
                    {msg: 'this.width is incorrect.'});
     console.assert(world.height === 2,
                    {msg: 'this.height is incorrect.'});
-    console.assert(world.isMonster(0, 0),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isMonster(1, 0),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isMonster(2, 0),
-                   {msg: 'this.isMonster() failed.'});
-    console.assert(!world.isBoulder(1, 0),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(world.isBoulder(2, 0),
-                   {msg: 'this.isBoulder() failed.'});
-    console.assert(!world.isRock(0, 0),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(world.isRock(0, 1),
-                   {msg: 'this.isRock() failed.'});
-    console.assert(!world.isTree(2, 0),
-                   {msg: 'this.isTree() failed.'});
-    console.assert(world.isTree(2, 1),
-                   {msg: 'this.isTree() failed.'});
+    console.assert(world.isTile(0, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(1, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(2, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(1, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(2, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 0, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(0, 1, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(2, 0, 'tree'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(2, 1, 'tree'),
+                   {msg: 'this.isTile() failed.'});
   }
 }
 WorldMap.test();
@@ -669,13 +651,13 @@ function drawMap() {
       tile, maprect, mx, my, linkrect;
   for (let x = 0; x < 16; x++) {
     for (let y = 0; y < 10; y++) {
-      if (mymap.isBoulder(x + mapx, y + mapy)) {
+      if (mymap.isTile(x + mapx, y + mapy, 'boulder')) {
         tile = 'boulder';
       }
-      else if (mymap.isRock(x + mapx, y + mapy)) {
+      else if (mymap.isTile(x + mapx, y + mapy, 'rock')) {
         tile = 'rock';
       }
-      else if (mymap.isTree(x + mapx, y + mapy)) {
+      else if (mymap.isTile(x + mapx, y + mapy, 'tree')) {
         tile = 'tree';
       }
       else {
