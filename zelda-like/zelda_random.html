@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>zelda</title>
+  <script src="../../jsgame0.js"></script>
+  <style type="text/css" media="screen">
+body {
+  background-color: white;
+  color: black;
+}
+.hidden {
+  display: none;
+}
+#original {
+  margin-left: 1em;
+}
+  </style>
+</head>
+
+<body>
+<section id="imageLoader" class="hidden">
+  <img class="hidden" src="images/boulder.png" alt="boulder" data-name="boulder">
+  <img class="hidden" src="images/ground.png" alt="ground" data-name="ground">
+  <img class="hidden" src="images/link_1.png" alt="link_1" data-name="link_1">
+  <img class="hidden" src="images/link_2.png" alt="link_2" data-name="link_2">
+  <img class="hidden" src="images/link_3.png" alt="link_3" data-name="link_3">
+  <img class="hidden" src="images/link_4.png" alt="link_4" data-name="link_4">
+  <img class="hidden" src="images/link_5.png" alt="link_5" data-name="link_5">
+  <img class="hidden" src="images/link_6.png" alt="link_6" data-name="link_6">
+  <img class="hidden" src="images/link_7.png" alt="link_7" data-name="link_7">
+  <img class="hidden" src="images/link_8.png" alt="link_8" data-name="link_8">
+  <img class="hidden" src="images/logo.png" alt="logo" data-name="logo">
+  <img class="hidden" src="images/monster_1.png" alt="monster_1" data-name="monster_1">
+  <img class="hidden" src="images/monster_2.png" alt="monster_2" data-name="monster_2">
+  <img class="hidden" src="images/monster_3.png" alt="monster_3" data-name="monster_3">
+  <img class="hidden" src="images/monster_4.png" alt="monster_4" data-name="monster_4">
+  <img class="hidden" src="images/monster_5.png" alt="monster_5" data-name="monster_5">
+  <img class="hidden" src="images/monster_6.png" alt="monster_6" data-name="monster_6">
+  <img class="hidden" src="images/monster_7.png" alt="monster_7" data-name="monster_7">
+  <img class="hidden" src="images/monster_8.png" alt="monster_8" data-name="monster_8">
+  <img class="hidden" src="images/rock.png" alt="rock" data-name="rock">
+  <img class="hidden" src="images/sword_0.png" alt="sword_0" data-name="sword_0">
+  <img class="hidden" src="images/sword_1.png" alt="sword_1" data-name="sword_1">
+  <img class="hidden" src="images/sword_2.png" alt="sword_2" data-name="sword_2">
+  <img class="hidden" src="images/sword_3.png" alt="sword_3" data-name="sword_3">
+  <img class="hidden" src="images/tree.png" alt="tree" data-name="tree">
+</section>
+
+<main>
+<h1>zelda</h1>
+
+<canvas id="screen">
+The game screen appears here if your browser supports the Canvas API.
+</canvas>
+<section id="controls">
+  <button type="button" id="reset">Reset</button>
+  <button type="button" id="pause">Pause</button>
+</section>
+
+<p>A version of Zelda-like with a procedurally generated world so the adventure never ends.</p>
+
+<h2>Attribution</h2>
+
+<p><a href="https://wireframe.raspberrypi.com/issues/61">Code your own top-down Zelda-like, pages 55-57, by Mark Vanstone</a>.</p>
+
+<p>Licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode">Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported</a>.</p>
+
+<p><a href="https://www.raspberrypi.com/news/code-your-own-top-down-zelda-like-wireframe-61/">Blog post of Source Code</a>.</p>
+
+</main>
+
+<script>
+/*
+ * Boolean flag indicating whether a monster's death by sword is permanent.
+ */
+const PERMANENT_DEATH = false;
+
+/*
+ * Integer coordinates of the starting screen.
+ */
+const ORIGIN = [0, 1];
+
+/*
+ * Array of integer offsets corresponding to the cardinal directions.
+ */
+const DIRECTIONS = [[0, 1], [-1, 0], [0, -1], [1, 0]];
+
+/*
+ * Integer count of tiles across the screen.
+ */
+const SCREEN_WIDTH = 16;
+
+/*
+ * Integer count of tiles down the screen.
+ */
+const SCREEN_HEIGHT = 10;
+
+/*
+ * Integer width or height of each tile in pixels.
+ */
+const TILE_SIZE = 50;
+
+/*
+ * Integer height of the user interface at the top in pixels.
+ */
+const UI_HEIGHT = 100;
+
+/*
+ * Map each string tile name to an arbitrary integer in [0, 255].
+ */
+const TILE_MAP = new Map([
+  ['ground', 0],
+  ['boulder', 11],
+  ['monster', 255],
+  ['rock', 22],
+  ['tree', 33]
+]);
+
+/*
+ * Class containing the location of every tile in the world.
+ */
+class WorldMap {
+  constructor(width, height) {
+    if (typeof width !== 'number') {
+      throw new TypeError('width must be a positive number.');
+    }
+    if (typeof height !== 'number') {
+      throw new TypeError('height must be a positive number.');
+    }
+    if (width <= 0) {
+      throw new RangeError('width must be a positive number.');
+    }
+    if (height <= 0) {
+      throw new RangeError('height must be a positive number.');
+    }
+
+    this.width = width;
+    this.height = height;
+    this.array = new Uint8ClampedArray(this.width * this.height);
+  }
+
+  /*
+   * Return the value at coordinates (x, y).
+   */
+  getAt(x = 0, y = 0, fallback = 0) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+
+    if (x < 0) {
+      return fallback;
+    }
+    if (y < 0) {
+      return fallback;
+    }
+    if (this.width <= x) {
+      return fallback;
+    }
+    if (this.height <= y) {
+      return fallback;
+    }
+    return this.array[(y*this.width)+x];
+  }
+
+  /*
+   * Set the value at coordinates (x, y) to value.
+   */
+  setAt(x, y, value) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+    if (typeof value === 'string') {
+      value = TILE_MAP.get(value);
+    }
+    if (typeof value !== 'number') {
+      throw new TypeError('value must be a number.');
+    }
+
+    if (x < 0) {
+      return;
+    }
+    if (y < 0) {
+      return;
+    }
+    if (this.width <= x) {
+      return;
+    }
+    if (this.height <= y) {
+      return;
+    }
+    this.array[(y*this.width)+x] = value;
+  }
+
+  /*
+   * Return true if the tile at coordinates (x, y) is tile.
+   */
+  isTile(x, y, tile) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+
+    if (x < 0) {
+      return false;
+    }
+    if (y < 0) {
+      return false;
+    }
+    if (this.width <= x) {
+      return false;
+    }
+    if (this.height <= y) {
+      return false;
+    }
+    return (this.getAt(x, y) === TILE_MAP.get(tile));
+  }
+
+  /*
+   * Return true if the coordinates (x, y) is blocked.
+   */
+  isBlocked(x = 0, y = 0) {
+    if (typeof x !== 'number') {
+      throw new TypeError('x must be a number.');
+    }
+    if (typeof y !== 'number') {
+      throw new TypeError('y must be a number.');
+    }
+
+    if (x < 0) {
+      return true;
+    }
+    if (y < 0) {
+      return true;
+    }
+    if (this.width <= x) {
+      return true;
+    }
+    if (this.height <= y) {
+      return true;
+    }
+    for (let tile of ['boulder', 'rock', 'tree']) {
+      if (this.isTile(x, y, tile)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  /*
+   * Return a WorldMap instance created from the world map in text.
+   *
+   * Each line in text cannot start or end with whitespace.
+   */
+  static loadMap(text) {
+    if (typeof text !== 'string') {
+      throw new TypeError('text must be a string.');
+    }
+
+    let lines = text.trim().split('\n').map((l) => l.trim()).filter((l) => (l.length > 0)),
+        width = Math.max(...lines.map((l) => l.length)),
+        height = lines.length,
+        world = new WorldMap(width, height),
+        y = 0,
+        x;
+    for (let line of lines) {
+      x = 0;
+      for (let char of line) {
+        if (char === 'B') {
+          world.setAt(x, y, 'boulder');
+        }
+        else if (char === 'M') {
+          world.setAt(x, y, 'monster');
+        }
+        else if (char === 'R') {
+          world.setAt(x, y, 'rock');
+        }
+        else if (char === 'T') {
+          world.setAt(x, y, 'tree');
+        }
+        x++;
+      }
+      y++;
+    }
+
+    return world;
+  }
+
+  /*
+   * A short test suite to confirm the WorldMap class works.
+   */
+  static test() {
+    for (let [k, v] of TILE_MAP) {
+      console.assert(TILE_MAP.get(k) === v,
+                     {msg: 'TILE_MAP is incorrect.'});
+      console.assert(k === k.toLowerCase(),
+                     {msg: 'TILE_MAP is incorrect.'});
+      console.assert(0 <= v,
+                     {msg: 'TILE_MAP is incorrect.'});
+      console.assert(v <= 255,
+                     {msg: 'TILE_MAP is incorrect.'});
+    }
+
+    let world = new WorldMap(2, 3);
+    console.assert(world.width === 2,
+                   {msg: 'this.width is incorrect.'});
+    console.assert(world.height === 3,
+                   {msg: 'this.height is incorrect.'});
+    console.assert(world.array.every((v) => (v === 0)),
+                   {msg: 'this.array incorrectly initialized.'});
+    console.assert(world.getAt() === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1) === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 2) === 0,
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 2, 3) === 0,
+                   {msg: 'this.getAt() failed.'});
+    for (let tile of TILE_MAP.keys()) {
+      if (tile === 'ground') {
+        console.assert(world.isTile(1, 2, tile),
+                       {msg: 'this.isTile() failed.'});
+      }
+      else {
+        console.assert(!world.isTile(1, 2, tile),
+                       {msg: 'this.isTile() failed.'});
+      }
+    }
+    console.assert(!world.isBlocked(),
+                   {msg: 'this.isBlocked() failed.'});
+    console.assert(!world.isBlocked(1),
+                   {msg: 'this.isBlocked() failed.'});
+    console.assert(!world.isBlocked(1, 2),
+                   {msg: 'this.isBlocked() failed.'});
+    world.setAt(0, 2, 255);
+    console.assert(world.getAt(0, 2) === TILE_MAP.get('monster'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(!world.isTile(0, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 1, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(0, 2, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    for (let x = 0; x < world.width; x++) {
+      for (let y = 0; y < world.height; y++) {
+        for (let tile of TILE_MAP.keys()) {
+          if ((tile === 'ground') || (tile === 'monster')) {
+            continue;
+          }
+          else {
+            console.assert(!world.isTile(x, y, tile),
+                           {msg: 'this.isTile() failed.'});
+          }
+        }
+        console.assert(!world.isBlocked(x, y),
+                       {msg: 'this.isBlocked() failed.'});
+      }
+    }
+    world.setAt(1, 0, TILE_MAP.get('boulder'));
+    world.setAt(1, 1, 'rock');
+    world.setAt(1, 2, 'tree');
+    console.assert(world.getAt(1, 0) === TILE_MAP.get('boulder'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 1) === TILE_MAP.get('rock'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(world.getAt(1, 2) === TILE_MAP.get('tree'),
+                   {msg: 'this.getAt() failed.'});
+    console.assert(!world.isTile(0, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(1, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 1, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(1, 1, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 2, 'tree'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(1, 2, 'tree'),
+                   {msg: 'this.isTile() failed.'});
+    for (let x = 0; x < world.width; x++) {
+      for (let y = 0; y < world.height; y++) {
+        console.assert(world.isBlocked(x, y) === (x === 1),
+                       {msg: 'this.isBlocked() failed.'});
+      }
+    }
+
+    world = WorldMap.loadMap(['M B', 'R T'].join('\n'));
+    console.assert(world.width === 3,
+                   {msg: 'this.width is incorrect.'});
+    console.assert(world.height === 2,
+                   {msg: 'this.height is incorrect.'});
+    console.assert(world.isTile(0, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(1, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(2, 0, 'monster'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(1, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(2, 0, 'boulder'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(0, 0, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(0, 1, 'rock'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(!world.isTile(2, 0, 'tree'),
+                   {msg: 'this.isTile() failed.'});
+    console.assert(world.isTile(2, 1, 'tree'),
+                   {msg: 'this.isTile() failed.'});
+  }
+}
+WorldMap.test();
+
+/*
+ * Return a random integer N such that min <= N < max.
+ */
+function getRandomInteger(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor((Math.random() * (max - min)) + min);
+}
+
+/*
+ * Wall off the screen with upperleft corner at world coordinates (startX, startY).
+ *
+ * Left and right walls are between 1 and 3 tiles thick, inclusive.
+ * Top and bottom walls are between 1 and 2 tiles thick, inclusive.
+ */
+function putUpWalls(world, startX, startY) {
+  let leftThickness = getRandomInteger(1, 4),
+      rightThickness = getRandomInteger(1, 4),
+      topThickness = getRandomInteger(1, 3),
+      bottomThickness = getRandomInteger(1, 3),
+      tile;
+  for (let i = 0; i < leftThickness; i++) {
+    tile = ['rock', 'tree'][getRandomInteger(0, 2)];
+    for (let y = startY; y < (startY + SCREEN_HEIGHT); y++) {
+      world.setAt(startX + i, y, tile);
+    }
+  }
+  for (let i = 0; i < rightThickness; i++) {
+    tile = ['rock', 'tree'][getRandomInteger(0, 2)];
+    for (let y = startY; y < (startY + SCREEN_HEIGHT); y++) {
+      world.setAt(startX + SCREEN_WIDTH - 1 - i, y, tile);
+    }
+  }
+  for (let i = 0; i < topThickness; i++) {
+    tile = ['rock', 'tree'][getRandomInteger(0, 2)];
+    for (let x = leftThickness; x < (SCREEN_WIDTH - rightThickness); x++) {
+      world.setAt(startX + x, startY + i, tile);
+    }
+  }
+  for (let i = 0; i < bottomThickness; i++) {
+    tile = ['rock', 'tree'][getRandomInteger(0, 2)];
+    for (let x = leftThickness; x < (SCREEN_WIDTH - rightThickness); x++) {
+      world.setAt(startX + x, startY + SCREEN_HEIGHT - 1 - i, tile);
+    }
+  }
+}
+
+/*
+ * Make a hole in direction in the screen with upperleft corner at world coordinates (startX, startY).
+ */
+function punchWall(world, startX, startY, direction) {
+  let opening = getRandomInteger(2, 7),
+      remainder, first;
+  if (direction === 'top') {
+    remainder = SCREEN_WIDTH - 3 - 3 - opening;
+    first = startX + getRandomInteger(3, remainder + 4);
+    for (let i = first; i < (first + opening); i++) {
+      for (let y = (startY - 3); y < (startY + 3); y++) {
+        world.setAt(i, y, 'ground');
+      }
+    }
+  }
+  else if (direction === 'right') {
+    remainder = SCREEN_HEIGHT - 2 - 2 - opening;
+    first = startY + getRandomInteger(2, remainder + 3);
+    for (let i = first; i < (first + opening); i++) {
+      for (let x = (startX + SCREEN_WIDTH - 3); x < (startX + SCREEN_WIDTH + 3); x++) {
+        world.setAt(x, i, 'ground');
+      }
+    }
+  }
+  else if (direction === 'bottom') {
+    remainder = SCREEN_WIDTH - 3 - 3 - opening;
+    first = startX + getRandomInteger(3, remainder + 4);
+    for (let i = first; i < (first + opening); i++) {
+      for (let y = (startY + SCREEN_HEIGHT - 3); y < (startY + SCREEN_HEIGHT + 3); y++) {
+        world.setAt(i, y, 'ground');
+      }
+    }
+  }
+  else if (direction === 'left') {
+    remainder = SCREEN_HEIGHT - 2 - 2 - opening;
+    first = startY + getRandomInteger(2, remainder + 3);
+    for (let i = first; i < (first + opening); i++) {
+      for (let x = (startX - 3); x < (startX + 3); x++) {
+        world.setAt(x, i, 'ground');
+      }
+    }
+  }
+}
+
+/*
+ * Populate the screen with upperleft corner at world coordinates (startX, startY).
+ */
+function populateScreen(world, startX, startY) {
+  let count = getRandomInteger(1, 6),
+      x, y, percentage, tile;
+  for (let i = 0; i < count; i++) {
+    x = startX + getRandomInteger(3, SCREEN_WIDTH - 3);
+    y = startY + getRandomInteger(2, SCREEN_HEIGHT - 2);
+    percentage = getRandomInteger(0, 100);
+    if (percentage < 30) {
+      tile = 'boulder';
+    }
+    else if (percentage < 60) {
+      tile = 'rock';
+    }
+    else if (percentage < 85) {
+      tile = 'tree';
+    }
+    else {
+      // 15% chance of monster
+      tile = 'monster';
+    }
+    world.setAt(x, y, tile);
+  }
+}
+
+/*
+ * Return a world map that is horizontalCount screens across and verticalCount screens down.
+ *
+ * Use Set to track the screens due to quirks with JavaScript array length.
+ */
+function generateWorld(horizontalCount, verticalCount) {
+    if (typeof horizontalCount !== 'number') {
+      throw new TypeError('horizontalCount must be greater than 1.');
+    }
+    if (typeof verticalCount !== 'number') {
+      throw new TypeError('verticalCount must be greater than 1.');
+    }
+    if (horizontalCount <= 1) {
+      throw new RangeError('horizontalCount must be greater than 1.');
+    }
+    if (verticalCount <= 1) {
+      throw new RangeError('verticalCount must be greater than 1.');
+    }
+
+  let world = new WorldMap(horizontalCount * SCREEN_WIDTH, verticalCount * SCREEN_HEIGHT),
+      unvisited = new Set(),
+      notFullyExplored = new Set(),
+      current = ORIGIN,
+      neighbors, next;
+
+  // Generate horizontalCount * verticalCount screens with all 4 walls
+  for (let x = 0; x < horizontalCount; x++) {
+    for (let y = 0; y < verticalCount; y++) {
+      unvisited.add([x, y].join('x'));
+      putUpWalls(world, x * SCREEN_WIDTH, y * SCREEN_HEIGHT);
+    }
+  }
+
+  // Use Prim's Algorithm to find a minimal spanning tree.
+  // That is, find a path that connects all the screens.
+  while (unvisited.size > 0) {
+    unvisited.delete(current.join('x'));
+
+    neighbors = [[current[0] - 1, current[1]],
+                 [current[0] + 1, current[1]],
+                 [current[0], current[1] - 1],
+                 [current[0], current[1] + 1]];
+    // Filter for neighbors within the world
+    neighbors = neighbors.filter((n) => ((0 <= n[0]) && (n[0] < horizontalCount) && (0 <= n[1]) && (n[1] < verticalCount)));
+    // Filter for unvisited neighbors
+    neighbors = neighbors.filter((n) => unvisited.has(n.join('x')));
+
+    if (neighbors.length > 1) {
+      notFullyExplored.add(current.join('x'));
+      next = neighbors[getRandomInteger(0, neighbors.length)];
+    }
+    else if (neighbors.length === 1) {
+      next = neighbors[0];
+    }
+    else {
+      current = Array.from(notFullyExplored.values()).pop();
+      current = current.split('x').map((s) => parseInt(s, 10));
+      notFullyExplored.delete(current.join('x'));
+      continue;
+    }
+
+    // Connect current and next screens by punching a hole in the appropriate wall
+    if (current[0] === next[0]) {
+      if (current[1] < next[1]) {
+        // If current is above next
+        punchWall(world, current[0] * SCREEN_WIDTH, current[1] * SCREEN_HEIGHT, 'bottom');
+      }
+      else {
+        // If current is below next
+        punchWall(world, current[0] * SCREEN_WIDTH, current[1] * SCREEN_HEIGHT, 'top');
+      }
+    }
+    else if (current[0] < next[0]) {
+      // If current is to the left of next
+      punchWall(world, current[0] * SCREEN_WIDTH, current[1] * SCREEN_HEIGHT, 'right');
+    }
+    else {
+      // If current is to the right of next
+      punchWall(world, current[0] * SCREEN_WIDTH, current[1] * SCREEN_HEIGHT, 'left');
+    }
+    current = next;
+  }
+
+  // Populate each screen with random tiles
+  for (let x = 0; x < horizontalCount; x++) {
+    for (let y = 0; y < verticalCount; y++) {
+      if ((x === ORIGIN[0]) && (y === ORIGIN[1])) {
+        // Skip the starting screen
+        continue;
+      }
+      populateScreen(world, x * SCREEN_WIDTH, y * SCREEN_HEIGHT);
+    }
+  }
+
+  return world;
+}
+
+var link, sword, monsters, mymap, mapx, mapy, mapScrollx, mapScrolly;
+
+function reset() {
+  link = new Actor("link_1");
+  link.center = [400, 400];
+  link.frame = 0;
+  link.movex = 0;
+  link.movey = 0;
+  link.dir = 0;
+  link.testx = 0;
+  link.testy = 0;
+  sword = new Actor("sword_1");
+  sword.center = [400, 400];
+  sword.frame = 0;
+  sword.dir = 0;
+  monsters = [];
+
+  mymap = generateWorld(2, 3);
+  mapx = 0;
+  mapy = SCREEN_HEIGHT;
+  mapScrollx = 0;
+  mapScrolly = 0;
+}
+
+function draw() {
+  screen.clear();
+  screen.blit("logo", [10, 10]);
+  screen.blit("logo", [612, 10]);
+  screen.draw.text("W, A, S, D TO MOVE", {
+    center: [400, 30],
+    color: [0, 255, 0],
+    fontsize: 30
+  });
+  screen.draw.text("SPACE TO USE SWORD", {
+    center: [400, 70],
+    color: [0, 255, 0],
+    fontsize: 30
+  });
+  drawMap();
+  drawChars();
+}
+
+function drawMap() {
+  let tile;
+  for (let x = 0; x < SCREEN_WIDTH; x++) {
+    for (let y = 0; y < SCREEN_HEIGHT; y++) {
+      if (mymap.isTile(x + mapx, y + mapy, 'boulder')) {
+        tile = 'boulder';
+      }
+      else if (mymap.isTile(x + mapx, y + mapy, 'rock')) {
+        tile = 'rock';
+      }
+      else if (mymap.isTile(x + mapx, y + mapy, 'tree')) {
+        tile = 'tree';
+      }
+      else {
+        tile = 'ground';
+      }
+      screen.blit(tile, [x * TILE_SIZE, (y * TILE_SIZE) + UI_HEIGHT]);
+    }
+  }
+}
+
+function drawChars() {
+  if ((sword.frame > 0) && (sword.dir === 2)) {
+    sword.draw();
+  }
+  link.draw();
+  if ((sword.frame > 0) && (sword.dir !== 2)) {
+    sword.draw();
+  }
+  for (let m of monsters) {
+    m.draw();
+  }
+}
+
+function update() {
+  checkInput();
+  moveChar(link);
+  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed(0);
+
+  if ((link.posx > 800) && (mapScrollx === 0)) {
+    mapScrollx = SCREEN_WIDTH;
+    monsters = [];
+  }
+  if ((link.posx < 0) && (mapScrollx === 0)) {
+    mapScrollx = -SCREEN_WIDTH;
+    monsters = [];
+  }
+  if ((link.posy > 600) && (mapScrolly === 0)) {
+    mapScrolly = SCREEN_HEIGHT;
+    monsters = [];
+  }
+  if ((link.posy < UI_HEIGHT) && (mapScrolly === 0)) {
+    mapScrolly = -SCREEN_HEIGHT;
+    monsters = [];
+  }
+  if (mapScrollx > 0) {
+    mapScroll(1, 0);
+  }
+  if (mapScrollx < 0) {
+    mapScroll(-1, 0);
+  }
+  if (mapScrolly > 0) {
+    mapScroll(0, 1);
+  }
+  if (mapScrolly < 0) {
+    mapScroll(0, -1);
+  }
+
+  let i = 0;
+  for (let m of monsters) {
+    if (m.state > 0) {
+      if (m.state < 10) {
+        m.angle += 10;
+        m.state -= 1;
+      }
+      else {
+        if (m.posx > (link.posx + TILE_SIZE)) {
+          // If monster is to the right of Link, then move it left
+          m.movex = -1;
+        }
+        else if (m.posx < (link.posx - TILE_SIZE)) {
+          // If monster is to the left of Link, then move it right
+          m.movex = 1;
+        }
+        if (m.posy > (link.posy + TILE_SIZE)) {
+          // If monster is below Link, then move it up
+          m.movey = -1;
+        }
+        else if (m.posy < (link.posy - TILE_SIZE)) {
+          // If monster is to above Link, then move it down
+          m.movey = 1;
+        }
+        moveChar(m);
+        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed(0);
+      }
+    }
+    else {
+      // Delete the monster once it has finished spinning to avoid the limbo monster bug
+      monsters.splice(i, 1);
+    }
+    i++;
+  }
+
+  if (sword.frame > 0) {
+    if (sword.frame > 5) {
+      sword.posx += DIRECTIONS[sword.dir][0] * 2;
+      sword.posy += DIRECTIONS[sword.dir][1] * 2;
+    }
+    else {
+      sword.posx -= DIRECTIONS[sword.dir][0] * 2;
+      sword.posy -= DIRECTIONS[sword.dir][1] * 2;
+    }
+    sword.frame -= 1;
+    for (let m of monsters) {
+      if (m.collidepoint([sword.posx, sword.posy])) {
+        m.state = 9;
+        if (PERMANENT_DEATH) {
+          // Delete the monster from the map ASAP so it does not spawn again
+          // Do this even if it is still spinning
+          mymap.setAt(m.worldx, m.worldy, 'ground');
+        }
+      }
+    }
+  }
+}
+
+function mapScroll(x, y) {
+  mapx += x;
+  mapScrollx -= x;
+  link.posx -= x * TILE_SIZE;
+  mapy += y;
+  mapScrolly -= y;
+  link.posy -= y * TILE_SIZE;
+
+  if ((mapScrollx === 0) && (mapScrolly === 0)) {
+    // If the screen scrolling is complete, then spawn the monsters in the current screen
+    for (let x = 0; x < SCREEN_WIDTH; x++) {
+      for (let y = 0; y < SCREEN_HEIGHT; y++) {
+        if (mymap.isTile(x + mapx, y + mapy, 'monster')) {
+          let monster = new Actor('monster_1');
+          // Set topleft to the coordinates in the canvas for drawing, not global world coordinates
+          monster.topleft = [x * TILE_SIZE, (y * TILE_SIZE) + UI_HEIGHT];
+          monster.state = 10;
+          monster.frame = 0;
+          monster.movex = 0;
+          monster.movey = 0;
+          monster.dir = 0;
+          monster.testx = 0;
+          monster.testy = 0;
+          monster.worldx = x + mapx;
+          monster.worldy = y + mapy;
+          monsters.push(monster);
+        }
+      }
+    }
+  }
+}
+
+function checkInput() {
+  if (keyboard[keys.A] || keyboard[keys.LEFT]) {
+    link.movex = -1;
+  }
+  if (keyboard[keys.D] || keyboard[keys.RIGHT]) {
+    link.movex = 1;
+  }
+  if (keyboard[keys.W] || keyboard[keys.UP]) {
+    link.movey = -1;
+  }
+  if (keyboard[keys.S] || keyboard[keys.DOWN]) {
+    link.movey = 1;
+  }
+}
+
+function on_key_down(key) {
+  if (key === keys.SPACE) {
+    sword.frame = 10;
+    sword.dir = link.dir;
+    sword.name = "sword_" + sword.dir;
+    sword.posx = link.posx + (DIRECTIONS[sword.dir][0] * 30);
+    sword.posy = link.posy + (DIRECTIONS[sword.dir][1] * 30);
+  }
+}
+
+function moveChar(ch) {
+  for (let d = 0; d < DIRECTIONS.length; d++) {
+    if ((DIRECTIONS[d][0] === ch.movex) && (DIRECTIONS[d][1] === ch.movey)) {
+      ch.dir = d;
+    }
+  }
+  if ((ch.movex !== 0) || (ch.movey !== 0)) {
+    ch.frame += 1;
+    if (ch.frame >= 20) {
+      ch.frame = 0;
+    }
+    if (ch.movex === 1) {
+      ch.testx = Math.round(((ch.posx - (TILE_SIZE - 2)) / TILE_SIZE) + ch.movex);
+    }
+    else {
+      ch.testx = Math.round((ch.posx / TILE_SIZE) + ch.movex);
+    }
+    if (ch.movey === 1) {
+      ch.testy = Math.round(((ch.posy - UI_HEIGHT - (TILE_SIZE - 2)) / TILE_SIZE) + ch.movey);
+    }
+    else {
+      ch.testy = Math.round(((ch.posy - UI_HEIGHT) / TILE_SIZE) + ch.movey);
+    }
+    if (!mymap.isBlocked(ch.testx + mapx, ch.testy + mapy)) {
+      ch.posx += ch.movex * 2;
+      ch.posy += ch.movey * 2;
+    }
+    ch.movex = 0;
+    ch.movey = 0;
+  }
+}
+
+window.addEventListener('load', (event) => {
+  images.LOAD('#imageLoader img');
+  reset();
+  screen.set_mode('#screen', '#reset', '#pause');
+});
+</script>
+</body>
+
+</html>
