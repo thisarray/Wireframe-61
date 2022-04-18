@@ -474,13 +474,51 @@ function putUpWalls(world, startX, startY) {
  */
 function punchWall(world, startX, startY, direction) {
   let opening = getRandomInteger(2, 7),
-      remainder, first;
+      remainder, first, gap, tile;
   if (direction === 'top') {
     remainder = SCREEN_WIDTH - 3 - 3 - opening;
-    first = startX + getRandomInteger(3, remainder + 4);
-    for (let i = first; i < (first + opening); i++) {
-      for (let y = (startY - 3); y < (startY + 3); y++) {
-        world.setAt(i, y, 'ground');
+    if ((opening < remainder) && (getRandomInteger(0, 100) < 25)) {
+      // If 2 openings are possible
+      remainder -= opening + 1;
+      first = startX + getRandomInteger(3, remainder + 4);
+      // Left opening
+      for (let i = first; i < (first + opening); i++) {
+        for (let y = (startY - 3); y < (startY + 3); y++) {
+          world.setAt(i, y, 'ground');
+        }
+      }
+
+      gap = [first + opening];
+      remainder -= first - (startX + 3);
+      first += opening + 1 + getRandomInteger(0, remainder + 1);
+      if (getRandomInteger(0, 100) < 25) {
+        // Add a vertical divider between the 2 openings
+        for (let i = gap[0]; i < first; i++) {
+          gap.push(i);
+        }
+        gap = gap.filter((g) => world.isBlocked(g, startY - SCREEN_HEIGHT));
+        if (gap.length > 0) {
+          gap = gap[getRandomInteger(0, gap.length)];
+          tile = world.getAt(gap, startY);
+          for (let y = (startY - SCREEN_HEIGHT + 1); y < startY; y++) {
+            world.setAt(gap, y, tile);
+          }
+        }
+      }
+
+      // Right opening
+      for (let i = first; i < (first + opening); i++) {
+        for (let y = (startY - 3); y < (startY + 3); y++) {
+          world.setAt(i, y, 'ground');
+        }
+      }
+    }
+    else {
+      first = startX + getRandomInteger(3, remainder + 4);
+      for (let i = first; i < (first + opening); i++) {
+        for (let y = (startY - 3); y < (startY + 3); y++) {
+          world.setAt(i, y, 'ground');
+        }
       }
     }
   }
@@ -495,10 +533,48 @@ function punchWall(world, startX, startY, direction) {
   }
   else if (direction === 'bottom') {
     remainder = SCREEN_WIDTH - 3 - 3 - opening;
-    first = startX + getRandomInteger(3, remainder + 4);
-    for (let i = first; i < (first + opening); i++) {
-      for (let y = (startY + SCREEN_HEIGHT - 3); y < (startY + SCREEN_HEIGHT + 3); y++) {
-        world.setAt(i, y, 'ground');
+    if ((opening < remainder) && (getRandomInteger(0, 100) < 25)) {
+      // If 2 openings are possible
+      remainder -= opening + 1;
+      first = startX + getRandomInteger(3, remainder + 4);
+      // Left opening
+      for (let i = first; i < (first + opening); i++) {
+        for (let y = (startY + SCREEN_HEIGHT - 3); y < (startY + SCREEN_HEIGHT + 3); y++) {
+          world.setAt(i, y, 'ground');
+        }
+      }
+
+      gap = [first + opening];
+      remainder -= first - (startX + 3);
+      first += opening + 1 + getRandomInteger(0, remainder + 1);
+      if (getRandomInteger(0, 100) < 25) {
+        // Add a vertical divider between the 2 openings
+        for (let i = gap[0]; i < first; i++) {
+          gap.push(i);
+        }
+        gap = gap.filter((g) => world.isBlocked(g, startY + (SCREEN_HEIGHT * 2) - 1));
+        if (gap.length > 0) {
+          gap = gap[getRandomInteger(0, gap.length)];
+          tile = world.getAt(gap, startY + SCREEN_HEIGHT - 1);
+          for (let y = (startY + SCREEN_HEIGHT); y < (startY + (SCREEN_HEIGHT * 2) - 1); y++) {
+            world.setAt(gap, y, tile);
+          }
+        }
+      }
+
+      // Right opening
+      for (let i = first; i < (first + opening); i++) {
+        for (let y = (startY + SCREEN_HEIGHT - 3); y < (startY + SCREEN_HEIGHT + 3); y++) {
+          world.setAt(i, y, 'ground');
+        }
+      }
+    }
+    else {
+      first = startX + getRandomInteger(3, remainder + 4);
+      for (let i = first; i < (first + opening); i++) {
+        for (let y = (startY + SCREEN_HEIGHT - 3); y < (startY + SCREEN_HEIGHT + 3); y++) {
+          world.setAt(i, y, 'ground');
+        }
       }
     }
   }
@@ -518,10 +594,53 @@ function punchWall(world, startX, startY, direction) {
  */
 function populateScreen(world, startX, startY) {
   let count = getRandomInteger(1, 6),
+      xMin = 3,
+      xMax = SCREEN_WIDTH - 3,
+      yMin = 2,
+      yMax = SCREEN_HEIGHT - 2,
+      openTop = false,
+      openRight = false,
+      openBottom = false,
+      openLeft = false,
       x, y, percentage, tile;
-  for (let i = 0; i < count; i++) {
-    x = startX + getRandomInteger(3, SCREEN_WIDTH - 3);
-    y = startY + getRandomInteger(2, SCREEN_HEIGHT - 2);
+
+  // Look for openings in the 4 walls of the screen
+  for (let x = (startX + xMin); x < (startX + xMax); x++) {
+    if (!world.isBlocked(x, startY)) {
+      openTop = true;
+    }
+    if (!world.isBlocked(x, startY + SCREEN_HEIGHT - 1)) {
+      openBottom = true;
+    }
+  }
+  for (let y = (startY + yMin); y < (startY + yMax); y++) {
+    if (!world.isBlocked(startX, y)) {
+      openLeft = true;
+    }
+    if (!world.isBlocked(startX + SCREEN_WIDTH - 1, y)) {
+      openRight = true;
+    }
+  }
+  if (openTop) {
+    yMin++;
+  }
+  if (openBottom) {
+    yMax--;
+  }
+  if (openLeft) {
+    xMin++;
+  }
+  if (openRight) {
+    xMax--;
+  }
+
+  while (count > 0) {
+    x = startX + getRandomInteger(xMin, xMax);
+    y = startY + getRandomInteger(yMin, yMax);
+    if (world.isBlocked(x, y)) {
+      continue;
+    }
+
     percentage = getRandomInteger(0, 100);
     if (percentage < 30) {
       tile = 'boulder';
@@ -537,6 +656,8 @@ function populateScreen(world, startX, startY) {
       tile = 'monster';
     }
     world.setAt(x, y, tile);
+
+    count--;
   }
 }
 
@@ -654,7 +775,7 @@ function reset() {
   sword.dir = 0;
   monsters = [];
 
-  mymap = generateWorld(2, 3);
+  mymap = generateWorld(32, 16);
   mapx = 0;
   mapy = SCREEN_HEIGHT;
   mapScrollx = 0;
