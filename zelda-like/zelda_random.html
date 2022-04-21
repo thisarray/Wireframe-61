@@ -971,6 +971,27 @@ function checkInput() {
   if (keyboard[keys.S] || keyboard[keys.DOWN]) {
     link.movey = 1;
   }
+
+  // Enable gamepad support
+  Joystick.init();
+  if (Joystick.get_count() > 0) {
+    let joystick = new Joystick(0),
+        buttonCount = joystick.get_numbuttons();
+    for (let i of [0, 3, 6]) {
+      if (link.movex === 0) {
+        link.movex = Math.round(joystick.get_axis(i));
+      }
+      if (link.movey === 0) {
+        link.movey = Math.round(joystick.get_axis(i + 1));
+      }
+    }
+    for (let i = 0; i < buttonCount; i++) {
+      if (joystick.get_button(i)) {
+        // Simulate SPACE is pressed when any button is pressed
+        on_key_down(keys.SPACE);
+      }
+    }
+  }
 }
 
 function on_key_down(key) {
