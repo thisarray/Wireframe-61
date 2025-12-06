@@ -341,7 +341,7 @@ function drawMap() {
 }
 
 function drawChars() {
-  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed(0);
+  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed();
   if ((sword.frame > 0) && (sword.dir === 2)) {
     sword.draw();
   }
@@ -356,7 +356,7 @@ function drawChars() {
         m.state -= 1;
       }
       if (m.state === 10) {
-        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed(0);
+        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed();
       }
       m.draw();
     }

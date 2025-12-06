@@ -518,7 +518,7 @@ function drawChars() {
 function update() {
   checkInput();
   moveChar(link);
-  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed(0);
+  link.name = "link_" + (((link.dir * 2) + 1) + Math.floor(link.frame / 10)).toFixed();
 
   if ((link.posx > 800) && (mapScrollx === 0)) {
     mapScrollx = SCREEN_WIDTH;
@@ -574,7 +574,7 @@ function update() {
           m.movey = 1;
         }
         moveChar(m);
-        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed(0);
+        m.name = "monster_" + (((m.dir * 2) + 1) + Math.floor(m.frame / 10)).toFixed();
       }
     }
     else {
